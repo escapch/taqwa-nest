@@ -8,7 +8,7 @@ import * as dayjs from 'dayjs';
 export class TaskService {
   constructor(@InjectModel(Task.name) private taskModel: Model<TaskDocument>) {}
 
-  private prayerNames = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+  private prayerNames = ['Фаджр', 'Зухр', 'Аср', 'Магриб', 'Иша'];
 
   async getTodayTasks(userId: string): Promise<Task[]> {
     const today = dayjs().format('YYYY-MM-DD');

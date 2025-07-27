@@ -30,7 +30,16 @@ export class AuthService {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throw new UnauthorizedException('Invalid credentials');
 
-    return this.generateToken(String(user._id), user.email);
+    const token = this.generateToken(String(user._id), user.email);
+
+    return {
+      ...token,
+      user: {
+        id: String(user._id),
+        email: user.email,
+        name: user.name,
+      },
+    };
   }
 
   private generateToken(userId: string, email: string) {
