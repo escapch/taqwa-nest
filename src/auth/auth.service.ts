@@ -12,14 +12,24 @@ export class AuthService {
   constructor(
     private userService: UsersService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
-  async register(email: string, password: string, name?: string) {
+  async register(
+    email: string,
+    password: string,
+    timezone?: string,
+    name?: string,
+  ) {
     const existing = await this.userService.findByEmail(email);
     if (existing) throw new ConflictException('User already exists');
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await this.userService.create(email, hashedPassword, name);
+    const user = await this.userService.create(
+      email,
+      hashedPassword,
+      timezone || 'UTC',
+      name,
+    );
     return this.generateToken(String(user._id), user.email);
   }
 

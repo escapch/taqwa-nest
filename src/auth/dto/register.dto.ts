@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({
@@ -23,5 +23,16 @@ export class RegisterDto {
     required: false,
   })
   @IsString()
+  @IsOptional()
   name?: string;
+
+  @ApiProperty({
+    example: 'Asia/Almaty',
+    description: 'Часовой пояс пользователя',
+    default: 'UTC',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  timezone?: string;
 }

@@ -8,20 +8,26 @@ import { ConfigModule } from '@nestjs/config';
 import { TaskModule } from './task/task.module';
 import { MissedModule } from './missed/missed.module';
 import { QuotesModule } from './quotes/quotes.module';
+import { PrayerTimesModule } from './prayer-times/prayer-times.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     UsersModule,
     MongooseModule.forRoot(process.env.DATABASE_URL || ''),
     TaskModule,
     MissedModule,
     QuotesModule,
+    PrayerTimesModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

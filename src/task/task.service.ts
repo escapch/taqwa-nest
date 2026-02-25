@@ -6,26 +6,28 @@ import * as dayjs from 'dayjs';
 
 @Injectable()
 export class TaskService {
-  constructor(@InjectModel(Task.name) private taskModel: Model<TaskDocument>) {}
+  constructor(@InjectModel(Task.name) private taskModel: Model<TaskDocument>) { }
 
   private prayerNames = ['Фаджр', 'Зухр', 'Аср', 'Магриб', 'Иша'];
 
   async getTodayTasks(userId: string): Promise<Task[]> {
     const today = dayjs().format('YYYY-MM-DD');
+    await this.createTasksForUser(userId, today);
+    return this.taskModel.find({ userId, date: today });
+  }
 
-    const existing = await this.taskModel.find({ userId, date: today });
+  async createTasksForUser(userId: string, date: string): Promise<void> {
+    const existing = await this.taskModel.find({ userId, date });
 
     if (existing.length === 0) {
       const newTasks = this.prayerNames.map((title) => ({
         userId,
         title,
         type: 'fard',
-        date: today,
+        date,
       }));
       await this.taskModel.insertMany(newTasks);
     }
-
-    return this.taskModel.find({ userId, date: today });
   }
 
   async toggleComplete(taskId: string, userId: string) {

@@ -1,4 +1,4 @@
-// src/profile/dto/profile-response.dto.ts
+// src/users/dto/profile-response.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ProfileResponseDto {
@@ -25,12 +25,21 @@ export class ProfileResponseDto {
     example: '2023-05-15T10:00:00Z',
     description: 'Дата регистрации',
   })
-  createdAt: Date;
+  registeredAt: Date;
 
   @ApiProperty({
-    example: '2023-06-20T15:30:00Z',
-    description: 'Дата последнего обновления',
+    example: 'Asia/Almaty',
+    description: 'Часовой пояс пользователя',
+  })
+  timezone: string;
+
+  @ApiProperty({
+    example: { latitude: 43.238293, longitude: 76.945465 },
+    description: 'Местоположение пользователя',
     required: false,
   })
-  updatedAt?: Date;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
 }
