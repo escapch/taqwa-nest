@@ -29,7 +29,7 @@ export class PrayerTimesService {
         latitude: number,
         longitude: number,
         userTimezone: string,
-        method: number = 2, // 2 = Islamic Society of North America (ISNA)
+        method: number = 3, // 3 = Muslim World League (стандарт для СНГ)
     ): Promise<PrayerTimes> {
         const cacheKey = `${date}-${latitude}-${longitude}-${method}`;
 
@@ -41,9 +41,10 @@ export class PrayerTimesService {
         }
 
         try {
-            // Aladhan API: http://api.aladhan.com/v1/timings/:date
-            const timestamp = dayjs(date).unix();
-            const url = `http://api.aladhan.com/v1/timings/${timestamp}`;
+            // Aladhan API: https://api.aladhan.com/v1/timingsByCity
+            // Используем формат DD-MM-YYYY напрямую, чтобы избежать путаницы с UTC timestamp
+            const formattedDate = dayjs(date).format('DD-MM-YYYY');
+            const url = `http://api.aladhan.com/v1/timings/${formattedDate}`;
 
             const response = await firstValueFrom(
                 this.httpService.get(url, {
@@ -51,6 +52,7 @@ export class PrayerTimesService {
                         latitude,
                         longitude,
                         method,
+                        timezone: userTimezone, // явно передаём timezone
                     },
                 }),
             );

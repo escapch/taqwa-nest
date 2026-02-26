@@ -119,8 +119,8 @@ export class NotificationsService implements OnModuleInit {
         prayerTime: string,
     ): Promise<void> {
         const payload = {
-            title: `Время намаза: ${prayerName}`,
-            body: `Наступило время ${prayerName} намаза (${prayerTime})`,
+            title: `🕌 Время намаза — ${prayerName}`,
+            body: `Намаз лучше в начале его времени`,
             data: {
                 type: 'prayer_reminder',
                 prayerName,
