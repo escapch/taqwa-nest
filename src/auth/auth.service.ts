@@ -48,6 +48,7 @@ export class AuthService {
         id: String(user._id),
         email: user.email,
         name: user.name,
+        registeredAt: user.registeredAt,
       },
     };
   }

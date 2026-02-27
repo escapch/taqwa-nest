@@ -13,7 +13,7 @@ import { UserRequest } from 'src/types/interfaces/user-request.interface';
 @UseGuards(AuthGuard('jwt'))
 @Controller('missed')
 export class MissedController {
-  constructor(private missedService: MissedService) {}
+  constructor(private missedService: MissedService) { }
 
   @Get('dates')
   getMissedDates(@Request() req: UserRequest) {
@@ -23,6 +23,11 @@ export class MissedController {
   @Get(':date')
   getTasksByDate(@Request() req: UserRequest, @Param('date') date: string) {
     return this.missedService.getTasksByDate(req.user.userId, date);
+  }
+
+  @Get('completed-dates')
+  getCompletedDates(@Request() req: UserRequest) {
+    return this.missedService.getCompletedDates(req.user.userId);
   }
 
   @Patch(':id/complete')

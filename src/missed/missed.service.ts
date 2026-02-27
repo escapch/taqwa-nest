@@ -6,7 +6,7 @@ import * as dayjs from 'dayjs';
 
 @Injectable()
 export class MissedService {
-  constructor(@InjectModel(Task.name) private taskModel: Model<TaskDocument>) {}
+  constructor(@InjectModel(Task.name) private taskModel: Model<TaskDocument>) { }
 
   // Получить список всех дат с пропущенными фард-намазами
   async getMissedDates(userId: string): Promise<string[]> {
@@ -39,5 +39,33 @@ export class MissedService {
     if (!task || task.type !== 'fard') return null;
     task.isCompleted = true;
     return task.save();
+  }
+
+  // Получить список всех дат, где все 5 фард-намазов выполнены
+  async getCompletedDates(userId: string): Promise<string[]> {
+    const tasks = await this.taskModel.find({
+      userId,
+      type: 'fard',
+    });
+
+    const dateMap = new Map<string, { total: number; completed: number }>();
+
+    tasks.forEach((task) => {
+      if (!dateMap.has(task.date)) {
+        dateMap.set(task.date, { total: 0, completed: 0 });
+      }
+      const stats = dateMap.get(task.date)!;
+      stats.total += 1;
+      if (task.isCompleted) stats.completed += 1;
+    });
+
+    const completedDates: string[] = [];
+    dateMap.forEach((stats, date) => {
+      if (stats.total === 5 && stats.completed === 5) {
+        completedDates.push(date);
+      }
+    });
+
+    return completedDates;
   }
 }

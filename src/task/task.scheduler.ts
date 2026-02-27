@@ -25,28 +25,21 @@ export class TaskScheduler {
 
         try {
             const users = await this.usersService.getAllUsers();
-            const now = Date.now();
 
             for (const user of users) {
                 try {
                     // Calculate user's current local time
                     const userTime = dayjs().tz(user.timezone);
-                    const userHour = userTime.hour();
+                    const today = userTime.format('YYYY-MM-DD');
 
-                    // Create tasks at 03:00 local time
-                    if (userHour === 3) {
-                        const today = userTime.format('YYYY-MM-DD');
-                        await this.taskService.createTasksForUser(
-                            String(user._id),
-                            today,
-                        );
-                        this.logger.log(
-                            `Created tasks for user ${user.email} (timezone: ${user.timezone})`,
-                        );
-                    }
+                    // Create tasks if they don't exist for today
+                    await this.taskService.createTasksForUser(
+                        String(user._id),
+                        today,
+                    );
                 } catch (error) {
                     this.logger.error(
-                        `Failed to create tasks for user ${user.email}: ${error.message}`,
+                        `Failed to handle tasks for user ${user.email}: ${error.message}`,
                     );
                 }
             }
