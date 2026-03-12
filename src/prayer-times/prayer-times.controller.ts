@@ -13,8 +13,6 @@ import { UserRequest } from 'src/types/interfaces/user-request.interface';
 import { UsersService } from 'src/users/users.service';
 
 @ApiTags('Prayer Times')
-@ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
 @Controller('prayer-times')
 export class PrayerTimesController {
     constructor(
@@ -22,6 +20,8 @@ export class PrayerTimesController {
         private readonly usersService: UsersService,
     ) { }
 
+    @ApiBearerAuth()
+    @UseGuards(AuthGuard('jwt'))
     @Get('today')
     @ApiOkResponse({
         description: 'Получить время намазов на сегодня для текущего пользователя',
