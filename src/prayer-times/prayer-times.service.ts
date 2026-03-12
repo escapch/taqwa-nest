@@ -10,6 +10,7 @@ dayjs.extend(timezone);
 
 export interface PrayerTimes {
     Fajr: string;
+    Sunrise: string;
     Dhuhr: string;
     Asr: string;
     Maghrib: string;
@@ -52,7 +53,8 @@ export class PrayerTimesService {
                         latitude,
                         longitude,
                         method,
-                        timezone: userTimezone, // явно передаём timezone
+                        timezone: userTimezone,
+                        school: 1,
                     },
                 }),
             );
@@ -61,6 +63,7 @@ export class PrayerTimesService {
 
             const prayerTimes: PrayerTimes = {
                 Fajr: timings.Fajr,
+                Sunrise: timings.Sunrise,
                 Dhuhr: timings.Dhuhr,
                 Asr: timings.Asr,
                 Maghrib: timings.Maghrib,
