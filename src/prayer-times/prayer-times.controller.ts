@@ -58,7 +58,7 @@ export class PrayerTimesController {
     ) {
         const latitude = parseFloat(lat);
         const longitude = parseFloat(lng);
-        const timezone = tz || 'UTC';
+        const timezone = tz || 'Asia/Bishkek';
 
         if (isNaN(latitude) || isNaN(longitude)) {
             throw new BadRequestException('Invalid latitude or longitude');

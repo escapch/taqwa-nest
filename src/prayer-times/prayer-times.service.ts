@@ -13,15 +13,39 @@ export interface PrayerTimes {
     Sunrise: string;
     Dhuhr: string;
     Asr: string;
+    Sunset: string;
     Maghrib: string;
     Isha: string;
+    Tahajjud: string;
+    Weekday: string;
     date: string;
+}
+
+interface MuftiyatPrayerTime {
+    id: number;
+    date: string;
+    weekday: string;
+    fajr: string;
+    sunrise: string;
+    dhuhr: string;
+    asr: string;
+    sunset: string;
+    maghrib: string;
+    isha: string;
+    tahajjud: string;
+}
+
+interface MuftiyatResponse {
+    lat: number;
+    lng: number;
+    prayertimes: MuftiyatPrayerTime[];
 }
 
 @Injectable()
 export class PrayerTimesService {
     private readonly logger = new Logger(PrayerTimesService.name);
     private readonly cache = new Map<string, { data: PrayerTimes; expiry: number }>();
+    private readonly BASE_URL = 'https://muftiyat.kg';
 
     constructor(private readonly httpService: HttpService) { }
 
@@ -30,9 +54,8 @@ export class PrayerTimesService {
         latitude: number,
         longitude: number,
         userTimezone: string,
-        method: number = 3, // 3 = Muslim World League (стандарт для СНГ)
     ): Promise<PrayerTimes> {
-        const cacheKey = `${date}-${latitude}-${longitude}-${method}`;
+        const cacheKey = `${date}-${latitude}-${longitude}`;
 
         // Check cache
         const cached = this.cache.get(cacheKey);
@@ -42,32 +65,37 @@ export class PrayerTimesService {
         }
 
         try {
-            // Aladhan API: https://api.aladhan.com/v1/timingsByCity
-            // Используем формат DD-MM-YYYY напрямую, чтобы избежать путаницы с UTC timestamp
+            // Muftiyat KG API — точные времена намаза для Кыргызстана
             const formattedDate = dayjs(date).format('DD-MM-YYYY');
-            const url = `http://api.aladhan.com/v1/timings/${formattedDate}`;
+            const url = `${this.BASE_URL}/ru/api/v1/calendar/`;
 
             const response = await firstValueFrom(
-                this.httpService.get(url, {
+                this.httpService.get<MuftiyatResponse>(url, {
                     params: {
-                        latitude,
-                        longitude,
-                        method,
-                        timezone: userTimezone,
-                        school: 1,
+                        lat: latitude,
+                        lng: longitude,
+                        start: formattedDate,
+                        end: formattedDate,
                     },
                 }),
             );
 
-            const timings = response.data.data.timings;
+            const timings = response.data.prayertimes?.[0];
+
+            if (!timings) {
+                throw new Error(`No prayer times returned for date ${date}`);
+            }
 
             const prayerTimes: PrayerTimes = {
-                Fajr: timings.Fajr,
-                Sunrise: timings.Sunrise,
-                Dhuhr: timings.Dhuhr,
-                Asr: timings.Asr,
-                Maghrib: timings.Maghrib,
-                Isha: timings.Isha,
+                Fajr: timings.fajr,
+                Sunrise: timings.sunrise,
+                Dhuhr: timings.dhuhr,
+                Asr: timings.asr,
+                Sunset: timings.sunset,
+                Maghrib: timings.maghrib,
+                Isha: timings.isha,
+                Tahajjud: timings.tahajjud,
+                Weekday: timings.weekday,
                 date,
             };
 
@@ -79,7 +107,7 @@ export class PrayerTimesService {
 
             return prayerTimes;
         } catch (error) {
-            this.logger.error(`Failed to fetch prayer times: ${error.message}`);
+            this.logger.error(`Failed to fetch prayer times from Muftiyat KG: ${error.message}`);
             throw new Error('Failed to fetch prayer times');
         }
     }
@@ -93,3 +121,4 @@ export class PrayerTimesService {
         return this.getPrayerTimes(today, latitude, longitude, userTimezone);
     }
 }
+
