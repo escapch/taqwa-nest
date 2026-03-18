@@ -15,19 +15,14 @@ import { UserRequest } from 'src/types/interfaces/user-request.interface';
 export class MissedController {
   constructor(private missedService: MissedService) { }
 
-  @Get('dates')
-  getMissedDates(@Request() req: UserRequest) {
-    return this.missedService.getMissedDates(req.user.userId);
+  @Get('overview')
+  getOverview(@Request() req: UserRequest) {
+    return this.missedService.getOverview(req.user.userId);
   }
 
   @Get(':date')
   getTasksByDate(@Request() req: UserRequest, @Param('date') date: string) {
     return this.missedService.getTasksByDate(req.user.userId, date);
-  }
-
-  @Get('completed-dates')
-  getCompletedDates(@Request() req: UserRequest) {
-    return this.missedService.getCompletedDates(req.user.userId);
   }
 
   @Patch(':id/complete')

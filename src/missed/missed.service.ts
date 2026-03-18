@@ -3,25 +3,69 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Task, TaskDocument } from '../task/schemas/task.schema';
 import { Model } from 'mongoose';
 import * as dayjs from 'dayjs';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class MissedService {
-  constructor(@InjectModel(Task.name) private taskModel: Model<TaskDocument>) { }
+  constructor(
+    @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
+    private usersService: UsersService,
+  ) { }
 
-  // Получить список всех дат с пропущенными фард-намазами
-  async getMissedDates(userId: string): Promise<string[]> {
-    const missedTasks = await this.taskModel.find({
-      userId,
-      type: 'fard',
-      isCompleted: false,
-      date: { $lt: dayjs().format('YYYY-MM-DD') },
-    });
+  async getOverview(userId: string) {
+    const user = await this.usersService.findById(userId);
+    if (!user) return [];
 
-    const uniqueDates = Array.from(
-      new Set(missedTasks.map((task) => task.date)),
+    const stats = await this.taskModel.aggregate([
+      {
+        $match: {
+          userId,
+          type: 'fard',
+        },
+      },
+      {
+        $group: {
+          _id: '$date',
+          total: { $sum: 1 },
+          completed: {
+            $sum: { $cond: [{ $eq: ['$isCompleted', true] }, 1, 0] },
+          },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const statsMap = new Map(
+      stats.map((s) => [s._id, { total: s.total, completed: s.completed }]),
     );
 
-    return uniqueDates;
+    const overview: { date: string; status: 'completed' | 'missed' | 'partial' }[] = [];
+    const startDate = dayjs(user.registeredAt);
+    const today = dayjs();
+
+    let current = startDate;
+    while (current.isBefore(today, 'day') || current.isSame(today, 'day')) {
+      const dateStr = current.format('YYYY-MM-DD');
+      const dayStats = statsMap.get(dateStr);
+      const isToday = current.isSame(today, 'day');
+
+      let status: 'completed' | 'missed' | 'partial' | null = 'missed';
+
+      if (dayStats) {
+        if (dayStats.completed === 5) status = 'completed';
+        else if (dayStats.completed > 0) status = 'partial';
+        else if (isToday) status = null; // Не отмечаем сегодняшний день как пропущенный, если 0 выполнено
+      } else if (isToday) {
+        status = null; // Если записей за сегодня ещё нет, не отмечаем как пропущенный
+      }
+
+      if (status) {
+        overview.push({ date: dateStr, status });
+      }
+      current = current.add(1, 'day');
+    }
+
+    return overview;
   }
 
   // Получить задачи на определённую дату
@@ -39,33 +83,5 @@ export class MissedService {
     if (!task || task.type !== 'fard') return null;
     task.isCompleted = true;
     return task.save();
-  }
-
-  // Получить список всех дат, где все 5 фард-намазов выполнены
-  async getCompletedDates(userId: string): Promise<string[]> {
-    const tasks = await this.taskModel.find({
-      userId,
-      type: 'fard',
-    });
-
-    const dateMap = new Map<string, { total: number; completed: number }>();
-
-    tasks.forEach((task) => {
-      if (!dateMap.has(task.date)) {
-        dateMap.set(task.date, { total: 0, completed: 0 });
-      }
-      const stats = dateMap.get(task.date)!;
-      stats.total += 1;
-      if (task.isCompleted) stats.completed += 1;
-    });
-
-    const completedDates: string[] = [];
-    dateMap.forEach((stats, date) => {
-      if (stats.total === 5 && stats.completed === 5) {
-        completedDates.push(date);
-      }
-    });
-
-    return completedDates;
   }
 }
