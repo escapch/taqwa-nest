@@ -3,10 +3,16 @@ import { Task, TaskDocument } from './schemas/task.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import * as dayjs from 'dayjs';
+import { UsersService } from '../users/users.service';
+
+export type StatsPeriod = 'week' | 'month' | 'year' | 'all';
 
 @Injectable()
 export class TaskService {
-  constructor(@InjectModel(Task.name) private taskModel: Model<TaskDocument>) { }
+  constructor(
+    @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
+    private usersService: UsersService,
+  ) { }
 
   private prayerNames = ['Фаджр', 'Зухр', 'Аср', 'Магриб', 'Иша'];
 
@@ -81,7 +87,7 @@ export class TaskService {
     });
   }
 
-  async getStats(userId: string) {
+  private async getStreaks(userId: string): Promise<{ currentStreak: number; bestStreak: number }> {
     const allTasks = await this.taskModel
       .find({ userId, type: 'fard' })
       .sort({ date: 1 });
@@ -132,18 +138,123 @@ export class TaskService {
       }
     }
 
-    const totalFards = allTasks.length;
-    const completedFards = allTasks.filter((t) => t.isCompleted).length;
+    return { currentStreak, bestStreak };
+  }
+
+  async getStatsOverview(userId: string, period: StatsPeriod) {
+    const user = await this.usersService.findById(userId);
+    const today = dayjs();
+    const registeredAt = dayjs(user?.registeredAt ?? today);
+
+    let from: dayjs.Dayjs;
+    switch (period) {
+      case 'week':
+        from = today.subtract(6, 'day');
+        break;
+      case 'month':
+        from = today.subtract(29, 'day');
+        break;
+      case 'year':
+        from = today.subtract(364, 'day');
+        break;
+      case 'all':
+      default:
+        from = registeredAt;
+        break;
+    }
+    if (from.isBefore(registeredAt, 'day')) from = registeredAt;
+
+    const fromStr = from.format('YYYY-MM-DD');
+    const toStr = today.format('YYYY-MM-DD');
+
+    const [facetResult] = await this.taskModel.aggregate([
+      {
+        $match: {
+          userId,
+          type: 'fard',
+          date: { $gte: fromStr, $lte: toStr },
+        },
+      },
+      {
+        $facet: {
+          daily: [
+            {
+              $group: {
+                _id: '$date',
+                total: { $sum: 1 },
+                completed: { $sum: { $cond: ['$isCompleted', 1, 0] } },
+              },
+            },
+            { $sort: { _id: 1 } },
+          ],
+          byPrayer: [
+            {
+              $group: {
+                _id: '$title',
+                total: { $sum: 1 },
+                completed: { $sum: { $cond: ['$isCompleted', 1, 0] } },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    const dailyMap = new Map<string, { total: number; completed: number }>(
+      facetResult.daily.map((d: { _id: string; total: number; completed: number }) => [
+        d._id,
+        { total: d.total, completed: d.completed },
+      ]),
+    );
+
+    const daily: { date: string; total: number; completed: number }[] = [];
+    let cursor = from;
+    while (cursor.isBefore(today, 'day') || cursor.isSame(today, 'day')) {
+      const dateStr = cursor.format('YYYY-MM-DD');
+      const rec = dailyMap.get(dateStr);
+      daily.push({ date: dateStr, total: rec?.total ?? 0, completed: rec?.completed ?? 0 });
+      cursor = cursor.add(1, 'day');
+    }
+
+    const prayerMap = new Map<string, { total: number; completed: number }>(
+      facetResult.byPrayer.map((p: { _id: string; total: number; completed: number }) => [
+        p._id,
+        { total: p.total, completed: p.completed },
+      ]),
+    );
+
+    const byPrayer = this.prayerNames.map((name) => {
+      const rec = prayerMap.get(name);
+      const total = rec?.total ?? 0;
+      const completed = rec?.completed ?? 0;
+      return {
+        name,
+        total,
+        completed,
+        percent: total ? Math.round((completed / total) * 100) : 0,
+      };
+    });
+
+    const totalFards = daily.reduce((sum, d) => sum + d.total, 0);
+    const completedFards = daily.reduce((sum, d) => sum + d.completed, 0);
     const percentCompleted = totalFards
       ? Math.round((completedFards / totalFards) * 100)
       : 0;
 
+    const { currentStreak, bestStreak } = await this.getStreaks(userId);
+
     return {
-      currentStreak,
-      bestStreak,
-      totalFards,
-      completedFards,
-      percentCompleted,
+      period,
+      range: { from: fromStr, to: toStr },
+      summary: {
+        percentCompleted,
+        completedFards,
+        totalFards,
+        currentStreak,
+        bestStreak,
+      },
+      daily,
+      byPrayer,
     };
   }
 }

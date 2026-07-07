@@ -7,14 +7,17 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { TaskService } from './task.service';
+import { TaskService, StatsPeriod } from './task.service';
 import { AddCustomTaskDto } from './dto/add-custom-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { UserRequest } from 'src/types/interfaces/user-request.interface';
+
+const STATS_PERIODS: StatsPeriod[] = ['week', 'month', 'year', 'all'];
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('task')
@@ -57,7 +60,10 @@ export class TaskController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get('/stats')
-  getStats(@Request() req: UserRequest) {
-    return this.taskService.getStats(req.user.userId);
+  getStats(@Request() req: UserRequest, @Query('period') period?: string) {
+    const validPeriod = STATS_PERIODS.includes(period as StatsPeriod)
+      ? (period as StatsPeriod)
+      : 'all';
+    return this.taskService.getStatsOverview(req.user.userId, validPeriod);
   }
 }
