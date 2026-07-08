@@ -141,6 +141,57 @@ export class TaskService {
     return { currentStreak, bestStreak };
   }
 
+  async getLifetimeStats(userId: string): Promise<{
+    currentStreak: number;
+    bestStreak: number;
+    completedFards: number;
+    hasPerfectMonth: boolean;
+  }> {
+    const allTasks = await this.taskModel
+      .find({ userId, type: 'fard' })
+      .sort({ date: 1 });
+
+    const dateMap = new Map<string, { total: number; completed: number }>();
+    let completedFards = 0;
+
+    allTasks.forEach((task) => {
+      const date = task.date;
+      if (!dateMap.has(date)) {
+        dateMap.set(date, { total: 0, completed: 0 });
+      }
+
+      const dayStats = dateMap.get(date)!;
+      dayStats.total += 1;
+      if (task.isCompleted) {
+        dayStats.completed += 1;
+        completedFards += 1;
+      }
+    });
+
+    const { currentStreak, bestStreak } = await this.getStreaks(userId);
+
+    const currentMonth = dayjs().format('YYYY-MM');
+    const monthMap = new Map<string, { total: number; completed: number }>();
+    dateMap.forEach(({ total, completed }, date) => {
+      const month = date.slice(0, 7);
+      if (month === currentMonth) return;
+      if (!monthMap.has(month)) monthMap.set(month, { total: 0, completed: 0 });
+      const monthStats = monthMap.get(month)!;
+      monthStats.total += total;
+      monthStats.completed += completed;
+    });
+
+    let hasPerfectMonth = false;
+    monthMap.forEach(({ total, completed }, month) => {
+      const expectedTotal = dayjs(month, 'YYYY-MM').daysInMonth() * 5;
+      if (total === expectedTotal && completed === expectedTotal) {
+        hasPerfectMonth = true;
+      }
+    });
+
+    return { currentStreak, bestStreak, completedFards, hasPerfectMonth };
+  }
+
   async getStatsOverview(userId: string, period: StatsPeriod) {
     const user = await this.usersService.findById(userId);
     const today = dayjs();

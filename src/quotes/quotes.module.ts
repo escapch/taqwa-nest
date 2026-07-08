@@ -10,5 +10,6 @@ import { Quote, QuoteSchema } from './schemas/quote.schema';
   ],
   providers: [QuoteService],
   controllers: [QuotesController],
+  exports: [QuoteService],
 })
 export class QuotesModule {}

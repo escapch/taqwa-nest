@@ -14,6 +14,11 @@ export interface Location {
   longitude: number;
 }
 
+export interface UnlockedAchievement {
+  key: string;
+  unlockedAt: Date;
+}
+
 @Schema()
 export class User extends Document {
   @Prop({ required: true, unique: true })
@@ -36,6 +41,9 @@ export class User extends Document {
 
   @Prop({ type: Array, default: [] })
   pushSubscriptions: PushSubscription[];
+
+  @Prop({ type: Array, default: [] })
+  unlockedAchievements: UnlockedAchievement[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

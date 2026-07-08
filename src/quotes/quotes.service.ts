@@ -17,6 +17,17 @@ export class QuoteService {
     return quote;
   }
 
+  async getRandomByCategory(category?: string): Promise<Quote | null> {
+    if (category) {
+      const count = await this.quoteModel.countDocuments({ category });
+      if (count > 0) {
+        const random = Math.floor(Math.random() * count);
+        return this.quoteModel.findOne({ category }).skip(random);
+      }
+    }
+    return this.getRandom();
+  }
+
   async createQuote(data: { text: string; source?: string }) {
     return this.quoteModel.create(data);
   }

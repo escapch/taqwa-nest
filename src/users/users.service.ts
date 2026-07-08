@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schemas/user.schema';
-import { PushSubscription, Location } from './schemas/user.schema';
+import { PushSubscription, Location, UnlockedAchievement } from './schemas/user.schema';
 import * as bcrypt from 'bcryptjs';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
@@ -72,6 +72,17 @@ export class UsersService {
     return this.userModel.findByIdAndUpdate(
       userId,
       { $pull: { pushSubscriptions: { endpoint } } },
+      { new: true },
+    );
+  }
+
+  async addUnlockedAchievements(
+    userId: string,
+    achievements: UnlockedAchievement[],
+  ): Promise<User | null> {
+    return this.userModel.findByIdAndUpdate(
+      userId,
+      { $push: { unlockedAchievements: { $each: achievements } } },
       { new: true },
     );
   }

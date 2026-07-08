@@ -11,6 +11,7 @@ import { QuotesModule } from './quotes/quotes.module';
 import { PrayerTimesModule } from './prayer-times/prayer-times.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AchievementsModule } from './achievements/achievements.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     QuotesModule,
     PrayerTimesModule,
     NotificationsModule,
+    AchievementsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
