@@ -44,6 +44,9 @@ export class User extends Document {
 
   @Prop({ type: Array, default: [] })
   unlockedAchievements: UnlockedAchievement[];
+
+  @Prop({ type: Boolean, default: false })
+  isAdmin: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

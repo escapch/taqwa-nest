@@ -12,6 +12,7 @@ import { PrayerTimesModule } from './prayer-times/prayer-times.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AchievementsModule } from './achievements/achievements.module';
+import { HadithsModule } from './hadiths/hadiths.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AchievementsModule } from './achievements/achievements.module';
     PrayerTimesModule,
     NotificationsModule,
     AchievementsModule,
+    HadithsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

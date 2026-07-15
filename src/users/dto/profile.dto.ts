@@ -42,4 +42,10 @@ export class ProfileResponseDto {
     latitude: number;
     longitude: number;
   };
+
+  @ApiProperty({
+    example: false,
+    description: 'Признак администратора',
+  })
+  isAdmin: boolean;
 }

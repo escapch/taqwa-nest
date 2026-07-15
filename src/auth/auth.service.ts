@@ -49,6 +49,7 @@ export class AuthService {
         email: user.email,
         name: user.name,
         registeredAt: user.registeredAt,
+        isAdmin: user.isAdmin,
       },
     };
   }

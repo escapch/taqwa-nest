@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Task, TaskDocument } from './schemas/task.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
@@ -8,29 +8,47 @@ import { UsersService } from '../users/users.service';
 export type StatsPeriod = 'week' | 'month' | 'year' | 'all';
 
 @Injectable()
-export class TaskService {
+export class TaskService implements OnModuleInit {
   constructor(
     @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
     private usersService: UsersService,
   ) { }
 
   private prayerNames = ['Фаджр', 'Зухр', 'Аср', 'Магриб', 'Иша'];
+  private customTaskOrder = this.prayerNames.length;
+
+  async onModuleInit() {
+    // Backfill `order` on tasks created before this field existed, so
+    // existing rows sort correctly instead of relying on Mongo's
+    // unspecified natural document order.
+    await this.taskModel.updateMany(
+      { type: 'fard', order: { $exists: false } },
+      [{ $set: { order: { $indexOfArray: [this.prayerNames, '$title'] } } }],
+    );
+    await this.taskModel.updateMany(
+      { type: 'custom', order: { $exists: false } },
+      { $set: { order: this.customTaskOrder } },
+    );
+  }
 
   async getTodayTasks(userId: string): Promise<Task[]> {
     const today = dayjs().format('YYYY-MM-DD');
     await this.createTasksForUser(userId, today);
-    return this.taskModel.find({ userId, date: today });
+    return this.taskModel
+      .find({ userId, date: today })
+      .sort({ order: 1, createdAt: 1 });
   }
 
   async createTasksForUser(userId: string, date: string): Promise<void> {
     const existing = await this.taskModel.find({ userId, date });
 
     if (existing.length === 0) {
-      const newTasks = this.prayerNames.map((title) => ({
+      const newTasks = this.prayerNames.map((title, order) => ({
         userId,
         title,
         type: 'fard',
         date,
+        order,
       }));
       await this.taskModel.insertMany(newTasks);
     }
@@ -58,6 +76,7 @@ export class TaskService {
       title,
       type: 'custom',
       date: today,
+      order: this.customTaskOrder,
     });
     return task.save();
   }
@@ -80,11 +99,13 @@ export class TaskService {
   }
 
   async getTasksByDate(userId: string, date: string) {
-    return this.taskModel.find({
-      userId,
-      date,
-      type: 'fard',
-    });
+    return this.taskModel
+      .find({
+        userId,
+        date,
+        type: 'fard',
+      })
+      .sort({ order: 1, createdAt: 1 });
   }
 
   private async getStreaks(userId: string): Promise<{ currentStreak: number; bestStreak: number }> {

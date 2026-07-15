@@ -44,6 +44,7 @@ export class UsersController {
       registeredAt: user.registeredAt,
       timezone: user.timezone,
       location: user.location,
+      isAdmin: user.isAdmin,
     };
   }
 
