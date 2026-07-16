@@ -11,7 +11,7 @@ export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) { }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.userModel.findOne({ email });
+    return this.userModel.findOne({ email: email.trim().toLowerCase() });
   }
 
   async findById(userId: string): Promise<User | null> {
@@ -25,7 +25,7 @@ export class UsersService {
     name?: string,
   ): Promise<User> {
     const newUser = new this.userModel({
-      email,
+      email: email.trim().toLowerCase(),
       password: hashedPassword,
       name,
       timezone,
@@ -108,7 +108,7 @@ export class UsersService {
     newPassword: string,
   ): Promise<void> {
     const user = await this.userModel.findById(userId);
-    if (!user) throw new UnauthorizedException('Пользователь не найден');
+    if (!user || !user.password) throw new UnauthorizedException('Пользователь не найден');
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch)
@@ -122,5 +122,58 @@ export class UsersService {
 
   async deleteAccount(userId: string): Promise<void> {
     await this.userModel.findByIdAndDelete(userId);
+  }
+
+  async setResetPasswordToken(
+    userId: string,
+    tokenHash: string,
+    expires: Date,
+  ): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, {
+      resetPasswordTokenHash: tokenHash,
+      resetPasswordExpires: expires,
+    });
+  }
+
+  async findByResetTokenHash(tokenHash: string): Promise<User | null> {
+    return this.userModel.findOne({
+      resetPasswordTokenHash: tokenHash,
+      resetPasswordExpires: { $gt: new Date() },
+    });
+  }
+
+  async resetPassword(userId: string, hashedPassword: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, {
+      password: hashedPassword,
+      $unset: { resetPasswordTokenHash: '', resetPasswordExpires: '' },
+    });
+  }
+
+  async findOrCreateByGoogle(params: {
+    googleId: string;
+    email: string;
+    name?: string;
+  }): Promise<User> {
+    const email = params.email.trim().toLowerCase();
+    let user = await this.userModel.findOne({
+      $or: [{ googleId: params.googleId }, { email }],
+    });
+
+    if (user) {
+      if (!user.googleId) {
+        user.googleId = params.googleId;
+        await user.save();
+      }
+      return user;
+    }
+
+    user = new this.userModel({
+      email,
+      googleId: params.googleId,
+      name: params.name,
+      timezone: 'UTC',
+      registeredAt: new Date(),
+    });
+    return user.save();
   }
 }

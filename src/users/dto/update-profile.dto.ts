@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class UpdateProfileDto {
     @ApiProperty({
@@ -17,6 +18,7 @@ export class UpdateProfileDto {
         required: false,
     })
     @IsOptional()
+    @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
     @IsEmail()
     email?: string;
 }

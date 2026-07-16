@@ -24,8 +24,8 @@ export class User extends Document {
   @Prop({ required: true, unique: true })
   email: string;
 
-  @Prop({ required: true })
-  password: string;
+  @Prop()
+  password?: string;
 
   @Prop()
   name: string;
@@ -47,6 +47,15 @@ export class User extends Document {
 
   @Prop({ type: Boolean, default: false })
   isAdmin: boolean;
+
+  @Prop()
+  resetPasswordTokenHash?: string;
+
+  @Prop({ type: Date })
+  resetPasswordExpires?: Date;
+
+  @Prop()
+  googleId?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
