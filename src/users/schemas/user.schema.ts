@@ -19,7 +19,16 @@ export interface UnlockedAchievement {
   unlockedAt: Date;
 }
 
-@Schema()
+@Schema({
+  toJSON: {
+    transform: (_doc, ret: Record<string, unknown>) => {
+      delete ret.password;
+      delete ret.resetPasswordTokenHash;
+      delete ret.resetPasswordExpires;
+      return ret;
+    },
+  },
+})
 export class User extends Document {
   @Prop({ required: true, unique: true })
   email: string;

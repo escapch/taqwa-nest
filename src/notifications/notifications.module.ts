@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module';
 import { TaskModule } from '../task/task.module';
 import { PrayerTimesModule } from '../prayer-times/prayer-times.module';
 import { PushSubscription, PushSubscriptionSchema } from './schemas/push-subscription.schema';
+import { AdminGuard } from '../common/guards/admin.guard';
 
 @Module({
     imports: [
@@ -20,7 +21,7 @@ import { PushSubscription, PushSubscriptionSchema } from './schemas/push-subscri
         ]),
     ],
     controllers: [NotificationsController],
-    providers: [NotificationsService, NotificationsScheduler],
+    providers: [NotificationsService, NotificationsScheduler, AdminGuard],
     exports: [NotificationsService],
 })
 export class NotificationsModule { }

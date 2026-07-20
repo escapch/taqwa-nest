@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { QuoteService } from './quotes.service';
 import { AuthGuard } from '@nestjs/passport';
+import { AdminGuard } from 'src/common/guards/admin.guard';
 
 @Controller('quotes')
 export class QuotesController {
@@ -19,7 +20,7 @@ export class QuotesController {
     return this.quoteService.getRandom();
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
   @Post('create')
   createQuote(@Body() body: { text: string; source?: string }) {
     return this.quoteService.createQuote(body);
@@ -30,7 +31,7 @@ export class QuotesController {
     return this.quoteService.getAllQuotes();
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
   @Delete(':id')
   deleteQuote(@Param('id') id: string) {
     return this.quoteService.deleteQuote(id);

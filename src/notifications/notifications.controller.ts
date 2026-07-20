@@ -3,6 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { AdminGuard } from 'src/common/guards/admin.guard';
 
 @ApiTags('Notifications')
 @Controller('notifications')
@@ -51,7 +52,7 @@ export class NotificationsController {
     }
 
     @Get('debug-all')
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), AdminGuard)
     async debugAll() {
         const all = await this.notificationsService.getAllSubscriptions();
         return {
@@ -65,7 +66,7 @@ export class NotificationsController {
     }
 
     @Get('test-broadcast')
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), AdminGuard)
     async testBroadcast() {
         const all = await this.notificationsService.getAllSubscriptions();
         let successCount = 0;
@@ -80,7 +81,7 @@ export class NotificationsController {
     }
 
     @Post('debug-clear-all')
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), AdminGuard)
     async clearAll() {
         await this.notificationsService.deleteAllSubscriptions();
         return { success: true, message: 'All subscriptions cleared' };
